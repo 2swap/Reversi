@@ -6,46 +6,43 @@ import java.util.List;
 public class Board {
 
 	public static final int BOARDSIZE = 8;
-	public byte[][] board = new byte[BOARDSIZE][BOARDSIZE];
-	public boolean whitesTurn = false;
+	public static final byte BLACK = 1, WHITE = 2, EMPTY = 0;
+	public byte[][] board;
+	public byte whoseTurn;
+	public int lastMove = -1;
 
 	public Board() {
+		resetBoard();
 	}
 	
-	public Board(byte[][] board, boolean whitesTurn) {
+	public Board(byte[][] board, byte whoseTurn, int lastMove) {
 		this.board = board;
-		this.whitesTurn = whitesTurn;
+		this.whoseTurn = whoseTurn;
 	}
 
-	public void setBoard() {
+	public void resetBoard() {
+		board = new byte[BOARDSIZE][BOARDSIZE];
 		
 		// Remove pieces from board
 		for (int y = 0; y < BOARDSIZE; y++)
 			for (int x = 0; x < BOARDSIZE; x++)
-				board[y][x] = 0;
+				board[y][x] = EMPTY;
 		
-		//Set cross in center: 1 is white, 2 black
-		board[3][3] = board[4][4] = 1;
-		board[3][4] = board[4][3] = 2;
+		//Set cross in center
+		board[3][3] = board[4][4] = WHITE;
+		board[3][4] = board[4][3] = BLACK;
 		
-		whitesTurn = false;
-	}
-
-	public boolean move(int x, int y, boolean wT) {
-		if (isLegal(x, y, wT)) {
-			board = place(board, x, y, wT);
-			return true;
-		}
-		return false;
+		whoseTurn = BLACK;
+		lastMove = -1;
 	}
 	
-	public static byte turnToByte(boolean turn) {
-		return (byte)(turn?2:1);
+	public static byte otherTurn(byte wT) {
+		return wT == BLACK ? WHITE : BLACK;
 	}
 	
 	//TODO cache this
-	public boolean isLegal(int x, int y, boolean wT) {
-		byte heCol = turnToByte(!wT);
+	public boolean isLegal(int x, int y) {
+		byte heCol = otherTurn(whoseTurn);
 		
 		//You can't move where there's already a piece
 		if (board[y][x] != 0) return false;
@@ -68,15 +65,14 @@ public class Board {
 		return false;
 	}
 
-	public static byte[][] place(byte[][] in, int x, int y, boolean wT) {
-		byte myCol = turnToByte( wT);
-		byte heCol = turnToByte(!wT);
+	public Board place(int x, int y) {
+		byte heCol = otherTurn(whoseTurn);
 		
 		//Copy this board in
 		byte[][] solved = new byte[BOARDSIZE][BOARDSIZE];
 		for (int i = 0; i < BOARDSIZE; i++)
 			for (int j = 0; j < BOARDSIZE; j++)
-				solved[i][j] = in[i][j];
+				solved[i][j] = board[i][j];
 		
 		for (int dx = -1; dx <= 1; dx++)
 			for (int dy = -1; dy <= 1; dy++) {
@@ -88,41 +84,51 @@ public class Board {
 					int nx = x + d*dx, ny = y + d*dy;
 					if (nx < 0 || nx >= BOARDSIZE || ny < 0 || ny >= BOARDSIZE) break;
 					
-					if (in[ny][nx] == heCol) {setCount = d; break;}
-					else if (in[ny][nx] == 0 || (in[ny][nx] == heCol && d==1)) break;
+					if (board[ny][nx] == heCol) {setCount = d; break;}
+					else if (board[ny][nx] == 0 || (board[ny][nx] == heCol && d==1)) break;
 				}
 				for(d = 1; d < setCount; d++) {
 					int nx = x + d*dx, ny = y + d*dy;
-					solved[ny][nx] = myCol;
+					solved[ny][nx] = whoseTurn;
 				}
 			}
 		
 		//set the played piece
-		solved[y][x] = myCol;
+		solved[y][x] = whoseTurn;
 		
-		return solved;
+		byte nextTurn = whoseTurnWillItBe(solved, whoseTurn);
+		return new Board(solved, nextTurn, x+y*BOARDSIZE);
 	}
 	
-	public boolean canPlayerMove(boolean wT) {
+	public static byte whoseTurnWillItBe(byte[][] dreamboard, byte whoJustPlaced) {
+		byte nextTurn = otherTurn(whoJustPlaced);
+		if(canIMove(dreamboard, nextTurn)) return nextTurn;
+		if(canIMove(dreamboard, whoJustPlaced)) return whoJustPlaced;
+		return EMPTY;
+		
+	}
+	
+	public static boolean canIMove(byte[][] dreamboard, byte myCol) {
+		Board b = new Board(dreamboard, myCol, -1);
 		for(int y = 0; y < BOARDSIZE; y++)
 			for(int x = 0; x < BOARDSIZE; x++)
-				if(isLegal(x,y,wT)) return true;
+				if(b.isLegal(x,y)) return true;
 		return false;
 	}
 
-	public List<byte[][]> children(){
-		ArrayList<byte[][]> out = new ArrayList<>();
+	public List<Board> children(){
+		ArrayList<Board> out = new ArrayList<>();
 		for (int y = 0; y < BOARDSIZE; y++)
 			for (int x = 0; x < BOARDSIZE; x++) {
 
-				if (!isLegal(x,y,whitesTurn)) continue;
+				if (!isLegal(x,y)) continue;
 
 				byte[][] newBoard = new byte[BOARDSIZE][BOARDSIZE];
 				for (int i = 0; i < BOARDSIZE; i++)
 					for (int j = 0; j < BOARDSIZE; j++)
 						newBoard[i][j] = board[i][j];
-				newBoard = place(newBoard, col, i);
-				out.add(newBoard);
+				Board child = place(x, y);
+				out.add(child);
 			}
 		return out;
 	}

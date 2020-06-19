@@ -1,7 +1,6 @@
 package com.twoswap.reversi.board;
 
 public class EvAlg {
-	static int boardSize = Board.boardSize, boardLength = Board.boardLength;
 	public int lastLoss, layerLengths = 16;
 	public double[] neurons = {0.08170419, 0.00332097, 0.02569031, 0.10811186, -0.0198416, 0.03369091, -0.0334171, 0.03270572, -0.0013292, -4.3371202};
 

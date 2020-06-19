@@ -17,7 +17,7 @@ import com.twoswap.reversi.graphics.Screen;
 
 public class Game extends Canvas implements Runnable {
 	private static final long serialVersionUID = 1L;
-	public static int width = Board.boardLength * 32, height = width;
+	public static int width = Board.BOARDSIZE * 32, height = width;
 	public static String title = "Reversi";
 	private JFrame frame;
 	private Thread thread;
@@ -92,7 +92,7 @@ public class Game extends Canvas implements Runnable {
 			return;
 		}
 		screen.clear();
-		screen.render();
+		screen.render(null);
 		for (int i = 0; i < pixels.length; i++) {
 			pixels[i] = screen.pixels[i];
 		}
