@@ -6,18 +6,18 @@ import java.awt.Graphics;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.util.Random;
 
 import javax.swing.JFrame;
 
 import com.twoswap.reversi.board.Board;
-import com.twoswap.reversi.board.EvAlg;
 import com.twoswap.reversi.board.Seat;
 import com.twoswap.reversi.graphics.Screen;
+import com.twoswap.reversi.strategy.GreedyStrategy;
+import com.twoswap.reversi.strategy.Strategy;
 
 public class Game extends Canvas implements Runnable {
 	private static final long serialVersionUID = 1L;
-	public static int width = Board.BOARDSIZE * 32, height = width;
+	public static int width = Board.SIZE * 32, height = width;
 	public static String title = "Reversi";
 	private JFrame frame;
 	private Thread thread;
@@ -25,13 +25,17 @@ public class Game extends Canvas implements Runnable {
 	private Screen screen;
 	public static int timePlayed = 0;
 	private Input in;
-	Random random = new Random();
 	static Game game;
+	public static Strategy metric = new GreedyStrategy();
+	public static Board gameBoard;
+	public static Seat blackSeat = new Seat(Board.BLACK, false);
+	public static Seat whiteSeat = new Seat(Board.WHITE, true);
 	private BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
 	public int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 
 	public Game() {
+		gameBoard = new Board();
 		Dimension size = new Dimension(width, height);
 		setPreferredSize(size);
 		screen = new Screen(width, height, this);
@@ -41,12 +45,6 @@ public class Game extends Canvas implements Runnable {
 	}
 
 	public synchronized void start() {
-		for (int i = 0; i < Seat.orgs.length; i++) {
-			Seat.orgs[i] = new EvAlg();
-			if (!Seat.human)
-				for (int j = 0; j < Seat.orgs[i].neurons.length; j++)
-					Seat.orgs[i].neurons[j] = Math.random();
-		}
 		requestFocusInWindow();
 		running = true;
 		thread = new Thread(this, "Display");
@@ -63,26 +61,22 @@ public class Game extends Canvas implements Runnable {
 	}
 
 	public void run() {
-		Board.setBoard();
 		requestFocus();
 		while (running) {
 			timePlayed++;
 			render();
-			if (!Seat.human)
-				tick();
+			tick();
 		}
 		stop();
 	}
 
 	public void tick() {
-		int move = Seat.move(Board.board);
-		if (move < 0 && !Seat.justPassed) {
-			Board.turn = (byte) ((Board.turn == 1) ? 2 : 1);
-			Seat.justPassed = true;
-		} else if (move < 0 && Seat.justPassed)
-			Seat.ga();
-		else
-			Board.move(move);
+		Seat atTurn = gameBoard.whoseTurn == Board.WHITE ? whiteSeat : blackSeat;
+		int move = atTurn.move();
+		int y = move/Board.SIZE, x = move%Board.SIZE;
+		if(move == -1) return;
+		if(!gameBoard.isLegal(x, y)) return;
+		gameBoard = gameBoard.place(x, y);
 	}
 
 	public void render() {
@@ -92,10 +86,8 @@ public class Game extends Canvas implements Runnable {
 			return;
 		}
 		screen.clear();
-		screen.render(null);
-		for (int i = 0; i < pixels.length; i++) {
-			pixels[i] = screen.pixels[i];
-		}
+		screen.render(gameBoard);
+		for (int i = 0; i < pixels.length; i++) pixels[i] = screen.pixels[i];
 		Graphics g = bs.getDrawGraphics();
 		g.drawImage(image, 0, 0, getWidth(), getHeight(), null);
 		g.dispose();

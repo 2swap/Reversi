@@ -34,8 +34,8 @@ public class Screen {
 			for (int x = 0; x < width; x += 32)
 				pixels[x + y * width] = 0;
 		
-		for (int x = 0; x < Board.BOARDSIZE; x++)
-			for (int y = 0; y < Board.BOARDSIZE; y++) {
+		for (int x = 0; x < Board.SIZE; x++)
+			for (int y = 0; y < Board.SIZE; y++) {
 				int color = cols[b.board[y][x]];
 				if (color == cols[0])
 					continue;
@@ -47,8 +47,9 @@ public class Screen {
 							pixels[x * 32 + xn + (y * 32 + yn) * width] = color;
 					}
 			}
-		for (int x = -2; x < 6; x++)
-			for (int y = -2; y < 6; y++)
-				pixels[(b.lastMove % Board.BOARDSIZE) * 32 + 14 + x + ((b.lastMove / Board.BOARDSIZE) * 32 + 14 + y) * width] = (x + 2 + y + 2) * 0x101010;
+		if(b.lastMove != -1)
+			for (int x = -2; x < 6; x++)
+				for (int y = -2; y < 6; y++)
+					pixels[(b.lastMove % Board.SIZE) * 32 + 14 + x + ((b.lastMove / Board.SIZE) * 32 + 14 + y) * width] = (x + 2 + y + 2) * 0x101010;
 	}
 }

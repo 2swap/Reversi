@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.twoswap.reversi.board.Board;
 
-public abstract class Strategy {
+public class Strategy {
 	
 	public double evaluateAsBlack(Board b) {
 		return 0;
