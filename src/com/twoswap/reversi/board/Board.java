@@ -5,138 +5,123 @@ import java.util.List;
 
 public class Board {
 
-	public static int boardLength = 8, boardSize = boardLength * boardLength;
-	public static byte[] board = new byte[boardSize];
-	public boolean whitesTurn = true;
-	public static int lastMove = boardSize / 2;
+	public static final int BOARDSIZE = 8;
+	public byte[][] board = new byte[BOARDSIZE][BOARDSIZE];
+	public boolean whitesTurn = false;
 
-	public static void setBoard() {
-		boardSize = boardLength * boardLength;
-		BoardLogic.boardLength = boardLength;
-		BoardLogic.boardSize = boardSize;
-		for (int loc = 0; loc < boardSize; loc++)
-			board[loc] = 0;
-		board[27] = board[36] = 1;
-		board[28] = board[35] = 2;
-		lastMove = boardSize / 2;
-		turn = 1;
+	public Board() {
+	}
+	
+	public Board(byte[][] board, boolean whitesTurn) {
+		this.board = board;
+		this.whitesTurn = whitesTurn;
 	}
 
-	public static boolean move(int loc) {
-		if (isLegal(board, loc, turn)) {
-			board = BoardLogic.solve(board, turn, loc);
-			turn = (byte) ((turn == 1) ? 2 : 1);
-			lastMove = loc;
+	public void setBoard() {
+		
+		// Remove pieces from board
+		for (int y = 0; y < BOARDSIZE; y++)
+			for (int x = 0; x < BOARDSIZE; x++)
+				board[y][x] = 0;
+		
+		//Set cross in center: 1 is white, 2 black
+		board[3][3] = board[4][4] = 1;
+		board[3][4] = board[4][3] = 2;
+		
+		whitesTurn = false;
+	}
+
+	public boolean move(int x, int y, boolean wT) {
+		if (isLegal(x, y, wT)) {
+			board = place(board, x, y, wT);
 			return true;
 		}
 		return false;
 	}
 	
-	public static boolean isLegal(int loc, boolean col) {
-		byte ocol = !col;
-		int x = loc % boardLength, y = loc / boardLength;
-		if (in[loc] != 0)
-			return false;
+	public static byte turnToByte(boolean turn) {
+		return (byte)(turn?2:1);
+	}
+	
+	//TODO cache this
+	public boolean isLegal(int x, int y, boolean wT) {
+		byte heCol = turnToByte(!wT);
+		
+		//You can't move where there's already a piece
+		if (board[y][x] != 0) return false;
 
-		boolean nearby = false;
-		for (int nx = -1; nx < 2; nx++)
-			for (int ny = -1; ny < 2; ny++)
-				if (x + nx >= 0 && x + nx < boardLength && y + ny >= 0 && y + ny < boardLength && in[x + nx + (y + ny) * boardLength] == ocol) {
-					nearby = true;
-					break;
-				}
-		if (!nearby)
-			return false;// quickly dismiss moves not touching enemy stones
-
-		for (int nx = -1; nx < 2; nx++)
-			for (int ny = -1; ny < 2; ny++) {
-				if (nx == 0 && ny == 0)
-					continue;
-				int cx = x + nx, cy = y + ny;
-				if (cx >= 0 && cx < boardLength && cy >= 0 && cy < boardLength && in[x + nx + (y + ny) * boardLength] == ocol) {
-					boolean capped = false;
-					while (!capped) {
-						cx += nx;
-						cy += ny;
-						if (cx >= 0 && cx < boardLength && cy >= 0 && cy < boardLength) {
-							if (in[cx + cy * boardLength] == col)
-								return true;
-							else if (in[cx + cy * boardLength] == 0)
-								break;
-						} else
-							break;
-					}
+		//Check that it's a valid sandwich
+		for (int dx = -1; dx <= 1; dx++)
+			for (int dy = -1; dy <= 1; dy++) {
+				if (dx == 0 && dy == 0) continue;
+				int d = 0;
+				while(true) {
+					++d;
+					int nx = x + d*dx, ny = y + d*dy;
+					if (nx < 0 || nx >= BOARDSIZE || ny < 0 || ny >= BOARDSIZE) break;
+					
+					if (board[ny][nx] == heCol && d>1) return true;
+					else if (board[ny][nx] == 0 || (board[ny][nx] == heCol && d==1)) break;
 				}
 			}
 
 		return false;
 	}
 
-	public static byte[] solve(byte[] in, boolean col, int loc) {
-		boolean ocol = !col;
-		byte[] solved = new byte[in.length];
-		for (int i = 0; i < in.length; i++)
-			solved[i] = in[i];
-		int x = loc % boardLength, y = loc / boardLength;
-		for (int nx = -1; nx < 2; nx++)
-			for (int ny = -1; ny < 2; ny++) {
-				if (nx == 0 && ny == 0)
-					continue;
-				int cx = x + nx, cy = y + ny;
-				if (cx >= 0 && cx < boardLength && cy >= 0 && cy < boardLength && (solved[x + nx + (y + ny) * boardLength] == 1) == ocol) {
-					boolean capped = false;
-					while (!capped) {
-						cx += nx;
-						cy += ny;
-						if (cx >= 0 && cx < boardLength && cy >= 0 && cy < boardLength) {
-							if ((solved[cx + cy * boardLength] == 1) == col)
-								capped = true;
-							else if (solved[cx + cy * boardLength] == 0)
-								break;
-						} else
-							break;
-					}
-					if (capped) {
-						cx = x + nx;
-						cy = y + ny;
-						while (true) {
-							if (solved[cx + cy * boardLength] == col)
-								break;
-							else
-								solved[cx + cy * boardLength] = col;
-							cx += nx;
-							cy += ny;
-						}
-					}
+	public static byte[][] place(byte[][] in, int x, int y, boolean wT) {
+		byte myCol = turnToByte( wT);
+		byte heCol = turnToByte(!wT);
+		
+		//Copy this board in
+		byte[][] solved = new byte[BOARDSIZE][BOARDSIZE];
+		for (int i = 0; i < BOARDSIZE; i++)
+			for (int j = 0; j < BOARDSIZE; j++)
+				solved[i][j] = in[i][j];
+		
+		for (int dx = -1; dx <= 1; dx++)
+			for (int dy = -1; dy <= 1; dy++) {
+				if (dx == 0 && dy == 0) continue;
+				int setCount = 0;
+				int d = 0;
+				while(true) {
+					++d;
+					int nx = x + d*dx, ny = y + d*dy;
+					if (nx < 0 || nx >= BOARDSIZE || ny < 0 || ny >= BOARDSIZE) break;
+					
+					if (in[ny][nx] == heCol) {setCount = d; break;}
+					else if (in[ny][nx] == 0 || (in[ny][nx] == heCol && d==1)) break;
+				}
+				for(d = 1; d < setCount; d++) {
+					int nx = x + d*dx, ny = y + d*dy;
+					solved[ny][nx] = myCol;
 				}
 			}
-		solved[loc] = col;
+		
+		//set the played piece
+		solved[y][x] = myCol;
+		
 		return solved;
 	}
 	
-	public static boolean isFull() {
-		for(byte b : board)
-			if(b==0)
-				return false;
-		return true;
+	public boolean canPlayerMove(boolean wT) {
+		for(int y = 0; y < BOARDSIZE; y++)
+			for(int x = 0; x < BOARDSIZE; x++)
+				if(isLegal(x,y,wT)) return true;
+		return false;
 	}
-	
-	public static boolean canBlackMove() {
-		return todo;
-	}
-	
-	public static List<byte[]> children(byte col){
-		ArrayList<byte[]> out = new ArrayList<>();
-		for (int y = 0; y < boardLength; y++)
-			for (int x = 0; x < boardLength; x++) {
-				int i = x + y * boardLength;
 
-				if (!BoardLogic.isLegal(in, i, col))
-					continue;
+	public List<byte[][]> children(){
+		ArrayList<byte[][]> out = new ArrayList<>();
+		for (int y = 0; y < BOARDSIZE; y++)
+			for (int x = 0; x < BOARDSIZE; x++) {
 
-				byte[] newBoard = new byte[in.length];
-				System.arraycopy(in, 0, newBoard, 0, boardSize);
-				newBoard = solve(newBoard, col, i);
+				if (!isLegal(x,y,whitesTurn)) continue;
+
+				byte[][] newBoard = new byte[BOARDSIZE][BOARDSIZE];
+				for (int i = 0; i < BOARDSIZE; i++)
+					for (int j = 0; j < BOARDSIZE; j++)
+						newBoard[i][j] = board[i][j];
+				newBoard = place(newBoard, col, i);
 				out.add(newBoard);
 			}
 		return out;

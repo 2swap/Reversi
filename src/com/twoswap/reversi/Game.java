@@ -12,7 +12,7 @@ import javax.swing.JFrame;
 
 import com.twoswap.reversi.board.Board;
 import com.twoswap.reversi.board.EvAlg;
-import com.twoswap.reversi.board.Opponent;
+import com.twoswap.reversi.board.Seat;
 import com.twoswap.reversi.graphics.Screen;
 
 public class Game extends Canvas implements Runnable {
@@ -41,11 +41,11 @@ public class Game extends Canvas implements Runnable {
 	}
 
 	public synchronized void start() {
-		for (int i = 0; i < Opponent.orgs.length; i++) {
-			Opponent.orgs[i] = new EvAlg();
-			if (!Opponent.human)
-				for (int j = 0; j < Opponent.orgs[i].neurons.length; j++)
-					Opponent.orgs[i].neurons[j] = Math.random();
+		for (int i = 0; i < Seat.orgs.length; i++) {
+			Seat.orgs[i] = new EvAlg();
+			if (!Seat.human)
+				for (int j = 0; j < Seat.orgs[i].neurons.length; j++)
+					Seat.orgs[i].neurons[j] = Math.random();
 		}
 		requestFocusInWindow();
 		running = true;
@@ -68,19 +68,19 @@ public class Game extends Canvas implements Runnable {
 		while (running) {
 			timePlayed++;
 			render();
-			if (!Opponent.human)
+			if (!Seat.human)
 				tick();
 		}
 		stop();
 	}
 
 	public void tick() {
-		int move = Opponent.move(Board.board);
-		if (move < 0 && !Opponent.justPassed) {
+		int move = Seat.move(Board.board);
+		if (move < 0 && !Seat.justPassed) {
 			Board.turn = (byte) ((Board.turn == 1) ? 2 : 1);
-			Opponent.justPassed = true;
-		} else if (move < 0 && Opponent.justPassed)
-			Opponent.ga();
+			Seat.justPassed = true;
+		} else if (move < 0 && Seat.justPassed)
+			Seat.ga();
 		else
 			Board.move(move);
 	}
