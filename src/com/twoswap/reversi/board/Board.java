@@ -43,8 +43,6 @@ public class Board {
 	
 	//TODO cache this
 	public boolean isLegal(int x, int y) {
-		byte heCol = otherTurn(whoseTurn);
-		
 		//You can't move where there's already a piece
 		if (board[y][x] != 0) return false;
 
@@ -59,7 +57,7 @@ public class Board {
 					if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) break;
 					
 					if (board[ny][nx] == whoseTurn && d>1) return true;
-					else if (board[ny][nx] == 0 || (board[ny][nx] == whoseTurn && d==1)) break;
+					else if (board[ny][nx] == EMPTY || (board[ny][nx] == whoseTurn && d==1)) break;
 				}
 			}
 
@@ -84,7 +82,7 @@ public class Board {
 					if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) break;
 					
 					if (board[ny][nx] == whoseTurn) {setCount = d; break;}
-					else if (board[ny][nx] == 0 || (board[ny][nx] == whoseTurn && d==1)) break;
+					else if (board[ny][nx] == EMPTY || (board[ny][nx] == whoseTurn && d==1)) break;
 				}
 				for(d = 1; d < setCount; d++) {
 					int nx = x + d*dx, ny = y + d*dy;
@@ -130,5 +128,18 @@ public class Board {
 				out.add(child);
 			}
 		return out;
+	}
+
+	public int getWinner() {
+		int ct = 0;
+		for(int i = 0; i < SIZE; i++)
+			for(int j = 0; j < SIZE; j++) {
+				if(board[i][j] == BLACK) ct++;
+				else if(board[i][j] == WHITE) ct--;
+			}
+		int ret = EMPTY;
+		if(ct > 0) ret = BLACK;
+		if(ct < 0) ret = WHITE;
+		return ret;
 	}
 }

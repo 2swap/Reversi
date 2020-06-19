@@ -8,7 +8,8 @@ public class Screen {
 	public int height;
 	public int[] pixels;
 	public Game game;
-	public int[] cols = { 0x00bf00, 0, 0xffffff, 0xff0000, 0xff00 };
+	public static int[] cols = { 0x00bf00, 0, 0xffffff};
+	public static String[] names = { "Empty", "Black", "White"};
 
 	public Screen(int width, int height, Game game) {
 		pixels = new int[width * height];
@@ -51,5 +52,10 @@ public class Screen {
 			for (int x = -2; x < 6; x++)
 				for (int y = -2; y < 6; y++)
 					pixels[(b.lastMove % Board.SIZE) * 32 + 14 + x + ((b.lastMove / Board.SIZE) * 32 + 14 + y) * width] = (x + 2 + y + 2) * 0x101010;
+		
+		if(b.whoseTurn == Board.EMPTY)
+			for(int i = (int) (width*.25); i < width*.75; i++)
+				for(int j = -5; j <= 5; j++)
+					pixels[i+j+i*width] = cols[b.getWinner()];
 	}
 }
