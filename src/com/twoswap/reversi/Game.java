@@ -16,6 +16,7 @@ import com.twoswap.reversi.strategy.AlphaBeta;
 import com.twoswap.reversi.strategy.Evaporate;
 import com.twoswap.reversi.strategy.EvaporateButCorners;
 import com.twoswap.reversi.strategy.GreedyCorners;
+import com.twoswap.reversi.strategy.GreedySmart;
 import com.twoswap.reversi.strategy.NeuralNetwork;
 import com.twoswap.reversi.strategy.RandomStrategy;
 
@@ -50,8 +51,8 @@ public class Game extends Canvas implements Runnable {
 	}
 	
 	public static void setSeats() {
-		blackSeat = new Seat(Board.BLACK, new AlphaBeta(new GreedyCorners(), 3));
-		whiteSeat = new Seat(Board.WHITE, new AlphaBeta(new EvaporateButCorners(), 3));
+		blackSeat = new Seat(Board.BLACK);
+		whiteSeat = new Seat(Board.WHITE, new AlphaBeta(new GreedySmart(), 5));
 	}
 
 	public synchronized void start() {
@@ -84,7 +85,7 @@ public class Game extends Canvas implements Runnable {
 	public void tick() {
 		if(timer < 0) return;
 		
-		if(gameBoard.whoseTurn == Board.EMPTY) {
+		if(gameBoard.whoseTurn == Board.EMPTY && timer > 5000) {
 			int win = gameBoard.getWinner();
 			
 			if(!whiteSeat.human && !blackSeat.human) {

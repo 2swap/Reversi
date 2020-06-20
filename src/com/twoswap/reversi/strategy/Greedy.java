@@ -2,7 +2,7 @@ package com.twoswap.reversi.strategy;
 
 import com.twoswap.reversi.board.Board;
 
-public class GreedyStrategy extends Strategy {
+public class Greedy extends Strategy {
 	
 	@Override
 	public double evaluateAsBlack(Board b) {
