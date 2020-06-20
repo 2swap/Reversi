@@ -13,11 +13,10 @@ import com.twoswap.reversi.board.Board;
 import com.twoswap.reversi.board.Seat;
 import com.twoswap.reversi.graphics.Screen;
 import com.twoswap.reversi.strategy.AlphaBeta;
-import com.twoswap.reversi.strategy.AlphaBetaCorners;
 import com.twoswap.reversi.strategy.Evaporate;
 import com.twoswap.reversi.strategy.EvaporateButCorners;
 import com.twoswap.reversi.strategy.GreedyCorners;
-import com.twoswap.reversi.strategy.GreedyStrategy;
+import com.twoswap.reversi.strategy.NeuralNetwork;
 import com.twoswap.reversi.strategy.RandomStrategy;
 
 public class Game extends Canvas implements Runnable {
@@ -33,8 +32,8 @@ public class Game extends Canvas implements Runnable {
 	static Game game;
 	public static Board gameBoard;
 	public static int bWins = 0, wWins = 0;
-	public static Seat blackSeat = new Seat(Board.BLACK);
-	public static Seat whiteSeat = new Seat(Board.WHITE, new AlphaBetaCorners(6));
+	public static Seat blackSeat;
+	public static Seat whiteSeat;
 	private BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
 	public int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
@@ -47,6 +46,12 @@ public class Game extends Canvas implements Runnable {
 		frame = new JFrame();
 		in = new Input(screen);
 		addMouseListener(in);
+		setSeats();
+	}
+	
+	public static void setSeats() {
+		blackSeat = new Seat(Board.BLACK, new AlphaBeta(new GreedyCorners(), 3));
+		whiteSeat = new Seat(Board.WHITE, new AlphaBeta(new EvaporateButCorners(), 3));
 	}
 
 	public synchronized void start() {
@@ -69,6 +74,7 @@ public class Game extends Canvas implements Runnable {
 		requestFocus();
 		while (running) {
 			timer++;
+			render();
 			tick();
 			render();
 		}
@@ -77,20 +83,28 @@ public class Game extends Canvas implements Runnable {
 
 	public void tick() {
 		if(timer < 0) return;
+		
+		if(gameBoard.whoseTurn == Board.EMPTY) {
+			int win = gameBoard.getWinner();
+			
+			if(!whiteSeat.human && !blackSeat.human) {
+				if(win == 2) {wWins++;blackSeat.strat.onLose();whiteSeat.strat.onWin();}
+				if(win == 1) {bWins++;whiteSeat.strat.onLose();blackSeat.strat.onWin();}
+			}
+			System.out.println(Screen.names[win] + " --- black win rate:" + bWins/(bWins+wWins+.01));
+			gameBoard.resetBoard();
+			setSeats();
+			return;
+		}
+		
 		Seat atTurn = gameBoard.whoseTurn == Board.WHITE ? whiteSeat : blackSeat;
 		int move = atTurn.move();
 		int y = move/Board.SIZE, x = move%Board.SIZE;
 		if(move == -1) return;
 		if(!gameBoard.isLegal(x, y)) return;
 		gameBoard = gameBoard.place(x, y);
+
 		timer = 0;
-		if(gameBoard.whoseTurn == Board.EMPTY) {
-			int win = gameBoard.getWinner();
-			if(win == 2)wWins++;
-			if(win == 1)bWins++;
-			System.out.println(Screen.names[win] + " b:" + bWins + " w:" + wWins);
-			gameBoard.resetBoard();
-		}
 	}
 
 	public void render() {
